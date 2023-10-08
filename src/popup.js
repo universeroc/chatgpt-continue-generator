@@ -3,23 +3,19 @@
 import './popup.css';
 
 (function () {
-  // We will make use of Storage API to get and store `count` value
-  // More information on Storage API can we found at
-  // https://developer.chrome.com/extensions/storage
-
   // To get storage access, we have to mention it in `permissions` property of manifest.json file
   // More information on Permissions can we found at
   // https://developer.chrome.com/extensions/declare_permissions
   const counterStorage = {
     get: (cb) => {
-      chrome.storage.sync.get(['count'], (result) => {
-        cb(result.count);
+      chrome.storage.sync.get(['auto_continue_generate_enabled'], (result) => {
+        cb(result.auto_continue_generate_enabled);
       });
     },
     set: (value, cb) => {
       chrome.storage.sync.set(
         {
-          count: value,
+          auto_continue_generate_enabled: value,
         },
         () => {
           cb();
@@ -28,85 +24,38 @@ import './popup.css';
     },
   };
 
-  function setupCounter(initialValue = 0) {
-    document.getElementById('counter').innerHTML = initialValue;
-
-    document.getElementById('incrementBtn').addEventListener('click', () => {
-      updateCounter({
-        type: 'INCREMENT',
-      });
+  document.addEventListener('DOMContentLoaded', () => {
+    counterStorage.get((auto_continue_generate_enabled) => {
+      document.getElementById('enabled').innerText = auto_continue_generate_enabled ? '✅' : '❌';
     });
 
-    document.getElementById('decrementBtn').addEventListener('click', () => {
-      updateCounter({
-        type: 'DECREMENT',
-      });
-    });
-  }
+    // Add event listener to increment button
+    document.getElementById('enabled').addEventListener('click', () => {
+      const enabled = document.getElementById('enabled').innerText === '✅'
+      counterStorage.set(!enabled, () => {
+        // Update the UI
+        document.getElementById('enabled').innerText = !enabled ? '✅' : '❌';
 
-  function updateCounter({ type }) {
-    counterStorage.get((count) => {
-      let newCount;
+        // Send message to contentScript
+        chrome.tabs.query({}).then(tabs => {
+          for (const tab of tabs) {
+            console.log(tab.url);
 
-      if (type === 'INCREMENT') {
-        newCount = count + 1;
-      } else if (type === 'DECREMENT') {
-        newCount = count - 1;
-      } else {
-        newCount = count;
-      }
-
-      counterStorage.set(newCount, () => {
-        document.getElementById('counter').innerHTML = newCount;
-
-        // Communicate with content script of
-        // active tab by sending a message
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          const tab = tabs[0];
-
-          chrome.tabs.sendMessage(
-            tab.id,
-            {
-              type: 'COUNT',
-              payload: {
-                count: newCount,
+            chrome.tabs.sendMessage(
+              tab.id,
+              {
+                type: 'UPDATE',
+                status: !enabled,
               },
-            },
-            (response) => {
-              console.log('Current count value passed to contentScript file');
-            }
-          );
+              (response) => {
+                console.log('Current count value passed to contentScript file');
+              }
+            );
+          }
+        }, error => {
+          console.error(error)
         });
       });
     });
-  }
-
-  function restoreCounter() {
-    // Restore count value
-    counterStorage.get((count) => {
-      if (typeof count === 'undefined') {
-        // Set counter value as 0
-        counterStorage.set(0, () => {
-          setupCounter(0);
-        });
-      } else {
-        setupCounter(count);
-      }
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', restoreCounter);
-
-  // Communicate with background file by sending a message
-  chrome.runtime.sendMessage(
-    {
-      type: 'GREETINGS',
-      payload: {
-        message: 'Hello, my name is Pop. I am from Popup.',
-      },
-    },
-    (response) => {
-      console.log(response.message);
-    }
-  );
+  });
 })();
