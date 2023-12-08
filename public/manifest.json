@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Chatgpt Continue Generator",
   "version": "1.0.1",
-  "description": "Auto continue generate fro ChatGPT",
+  "description": "Auto continue generate for ChatGPT",
   "icons": {
     "16": "icons/icon-16.png",
     "19": "icons/icon-19.png",
