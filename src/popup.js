@@ -9,7 +9,7 @@ import './popup.css';
   const counterStorage = {
     get: (cb) => {
       chrome.storage.sync.get(['auto_continue_generate_enabled'], (result) => {
-        cb(result.auto_continue_generate_enabled);
+        cb(result.auto_continue_generate_enabled || true);
       });
     },
     set: (value, cb) => {

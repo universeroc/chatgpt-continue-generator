@@ -9,6 +9,7 @@ chrome.storage.sync.get(['auto_continue_generate_enabled'], (result) => {
 // Listen for message
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'UPDATE') {
+      console.log(`get update request: ${request.status}`)
       __auto_continue_generate_enabled__ = request.status
     }
 
